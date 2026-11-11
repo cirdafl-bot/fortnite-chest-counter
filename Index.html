@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10152b">
+<title>Fortnite Chest Counter — Prototype</title>
+<style>
+:root{color-scheme:dark;--bg:#10152b;--panel:#1b2444;--muted:#aab5d6;--accent:#65d7ff;--green:#55df9a}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(160deg,#111a39,#090d1c);color:#fff;font:16px system-ui,-apple-system,Segoe UI,sans-serif;padding:20px 14px 40px}
+main{max-width:760px;margin:auto}
+h1{font-size:clamp(24px,6vw,36px);margin:8px 0 4px;text-align:center}
+.sub{text-align:center;color:var(--muted);margin:0 0 18px}
+.panel{background:var(--panel);border:1px solid #34416b;border-radius:18px;padding:16px;margin:14px 0;box-shadow:0 12px 32px #0004}
+.status{display:flex;gap:8px;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
+.dot{width:9px;height:9px;border-radius:50%;background:#e5b64c}
+video{width:100%;max-height:48vh;object-fit:contain;background:#05070d;border-radius:12px;margin-top:12px}
+button{border:0;border-radius:12px;padding:13px 15px;font:600 15px system-ui;cursor:pointer;background:#34436f;color:#fff}
+button.primary{background:#187eaa}
+button:disabled{opacity:.45;cursor:not-allowed}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{background:#111a34;border-radius:14px;padding:14px 8px;text-align:center}
+.num{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums}
+.tile small{display:block;color:var(--muted);font-size:12px}
+.total{text-align:center;font-size:54px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums}
+.note{color:var(--muted);font-size:13px;line-height:1.5}
+.warning{border-left:4px solid #e5b64c;padding-left:12px}
+.countbtn{width:100%;margin-top:8px;background:#28365e}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
+</style>
+</head>
+<body>
+<main>
+  <h1>FORTNITE CHEST COUNTER</h1>
+  <p class="sub">Camera + counter prototype</p>
+
+  <section class="panel">
+    <div class="status"><span class="dot" id="dot"></span><span id="cameraStatus">Camera not started</span></div>
+    <video id="video" autoplay playsinline muted></video>
+    <div class="controls">
+      <button class="primary" id="start">Start iPad camera</button>
+      <button id="stop" disabled>Stop camera</button>
+    </div>
+    <p class="note">Aim the iPad's rear camera at the TV. Keep the whole game screen in view and reduce glare if possible.</p>
+  </section>
+
+  <section class="panel">
+    <div class="status">TOTAL CHESTS OPENED</div>
+    <div class="total" id="total">0</div>
+    <div class="grid">
+      <div class="tile"><div class="num" id="normal">0</div><small>Normal</small></div>
+      <div class="tile"><div class="num" id="rare">0</div><small>Rare</small></div>
+      <div class="tile"><div class="num" id="sprite">0</div><small>Sprite</small></div>
+    </div>
+    <p class="note warning" id="detectorStatus">Automatic recognition is not connected yet. This prototype can show the camera and test the counters, but it does not automatically recognize chest openings.</p>
+    <div class="controls">
+      <button class="countbtn" data-kind="normal">Test +1 Normal</button>
+      <button class="countbtn" data-kind="rare">Test +1 Rare</button>
+      <button class="countbtn" data-kind="sprite">Test +1 Sprite</button>
+      <button id="reset">Reset counts</button>
+    </div>
+    <p class="note">The three test buttons only check that the counter works. They do not detect gameplay. Counts stay in this page while it remains open.</p>
+  </section>
+  <footer>Prototype — not affiliated with Epic Games or Fortnite.</footer>
+</main>
+<script>
+const video=document.getElementById('video');
+const status=document.getElementById('cameraStatus');
+const dot=document.getElementById('dot');
+const start=document.getElementById('start');
+const stop=document.getElementById('stop');
+const counts={normal:0,rare:0,sprite:0};
+function render(){
+  for(const k of Object.keys(counts)) document.getElementById(k).textContent=counts[k];
+  document.getElementById('total').textContent=Object.values(counts).reduce((a,b)=>a+b,0);
+}
+document.querySelectorAll('[data-kind]').forEach(b=>b.addEventListener('click',()=>{
+  counts[b.dataset.kind]++; render();
+}));
+document.getElementById('reset').addEventListener('click',()=>{
+  if(confirm('Reset all chest counts to zero?')){counts.normal=counts.rare=counts.sprite=0;render();}
+});
+let stream=null;
+start.addEventListener('click',async()=>{
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    video.srcObject=stream;
+    status.textContent='Camera is live';
+    dot.style.background='#55df9a';
+    start.disabled=true;stop.disabled=false;
+  }catch(e){
+    status.textContent='Camera unavailable: '+(e.name||'permission or browser error');
+    dot.style.background='#e35b6b';
+  }
+});
+function stopCamera(){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  video.srcObject=null;status.textContent='Camera stopped';dot.style.background='#e5b64c';
+  start.disabled=false;stop.disabled=true;
+}
+stop.addEventListener('click',stopCamera);
+window.addEventListener('pagehide',stopCamera);
+render();
+</script>
+</body>
+</html>
